@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#34493F">
+<title>Личная медкарта</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EFF2ED;
+    --paper-raised: #FFFFFF;
+    --ink: #1F2E28;
+    --ink-soft: #5C6B63;
+    --sage: #5B7A6C;
+    --sage-deep: #34493F;
+    --stamp: #B5533C;
+    --gold: #C08A3E;
+    --line: #D3D9D0;
+    --ok: #4C7A5E;
+    --radius: 14px;
+    --shadow: 0 2px 10px rgba(31,46,40,0.08);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin:0; padding:0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: 'IBM Plex Slab', Georgia, serif; margin: 0; color: var(--ink); }
+  button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+  p { margin: 0; }
+
+  .app { max-width: 640px; margin: 0 auto; min-height: 100vh; display:flex; flex-direction:column; padding-bottom: 40px; }
+
+  .preview-banner {
+    background: var(--gold);
+    color: #2b2109;
+    font-size: 12.5px;
+    padding: 10px 16px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding: 22px 20px 24px; gap:12px; background: linear-gradient(135deg, var(--sage-deep), #223228); border-radius: 0 0 24px 24px; margin-bottom: 4px; }
+  .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+  .brand-mark { width:38px; height:38px; background:var(--gold); border-radius:11px; position:relative; flex-shrink:0; }
+  .brand-mark::before, .brand-mark::after { content:''; position:absolute; background:var(--sage-deep); border-radius:2px; top:50%; left:50%; transform:translate(-50%,-50%); }
+  .brand-mark::before { width:16px; height:3px; }
+  .brand-mark::after { width:3px; height:16px; }
+  .topbar h1 { font-size: 19px; letter-spacing:-0.01em; color: var(--paper); }
+  .brand-sub { margin:2px 0 0; font-size:12.5px; color: rgba(239,242,237,0.72); font-family:'IBM Plex Mono', monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .btn-add {
+    width:44px; height:44px; border-radius:50%;
+    background: var(--gold); color: var(--sage-deep);
+    border:none; font-size:24px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3); flex-shrink:0;
+  }
+  .btn-add:active { transform: scale(0.95); }
+
+  .tabs { display:flex; gap:4px; padding: 0 20px; border-bottom:1px solid var(--line); }
+  .tab {
+    background:none; border:none; padding: 10px 6px 12px;
+    font-weight:500; font-size:14px; color: var(--ink-soft);
+    border-bottom:2px solid transparent; margin-bottom:-1px; flex:1;
+  }
+  .tab.active { color: var(--sage-deep); border-bottom-color: var(--stamp); font-weight:600; }
+
+  main { flex:1; padding: 18px 20px 0; }
+  .view { display:none; }
+  .view.active { display:block; }
+
+  .filters { display:flex; gap:8px; overflow-x:auto; padding-bottom:14px; margin-bottom:2px; }
+  .chip {
+    border:1px solid transparent; background: var(--chip-tint, var(--paper-raised));
+    border-radius:999px; padding:7px 14px; font-size:13px; white-space:nowrap; font-weight:500;
+    color: var(--chip-color, var(--ink-soft));
+  }
+  .chip.active { background: var(--chip-color, var(--sage-deep)); border-color: var(--chip-color, var(--sage-deep)); color: #fff; }
+
+  .year-divider { font-family:'IBM Plex Mono', monospace; font-size:13px; color: var(--ink-soft); padding: 18px 0 8px; letter-spacing: 0.05em; }
+  .year-divider:first-child { padding-top:0; }
+
+  .entry-card { display:flex; gap:14px; background: var(--card-tint, var(--paper-raised)); border-radius: var(--radius); padding:16px; margin-bottom:12px; box-shadow: var(--shadow); border:1px solid rgba(31,46,40,0.06); }
+  .stamp { width:42px; height:42px; border-radius:50%; background: var(--stamp-color, var(--sage)); color: var(--paper); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .entry-body { flex:1; min-width:0; }
+  .entry-top { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .entry-date { font-family:'IBM Plex Mono', monospace; font-size:13px; color: var(--ink-soft); }
+  .entry-type { font-size:11px; color: var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; text-align:right; }
+  .entry-title { font-size:16px; margin:4px 0 2px; }
+  .entry-place { margin:0 0 4px; font-size:13px; color: var(--ink-soft); }
+  .entry-details { margin:6px 0 0; font-size:13.5px; color: var(--ink); white-space:pre-wrap; }
+  .attachments { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .thumb { display:block; width:56px; height:56px; border-radius:8px; border:1px solid var(--line); cursor:pointer; background:#fff; text-decoration:none; overflow:hidden; }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .file-thumb { display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:18px; gap:2px; text-align:center; color: inherit; }
+  .file-thumb span { font-size:9px; color: var(--ink-soft); max-width:52px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .entry-actions { display:flex; gap:14px; margin-top:10px; }
+  .entry-actions button { background:none; border:none; padding:0; font-size:12.5px; color: var(--sage-deep); font-weight:500; text-decoration:underline; text-underline-offset:2px; }
+  .entry-actions button:last-child { color: var(--stamp); }
+
+  .empty { text-align:center; padding: 48px 20px; background: linear-gradient(160deg, #FFFFFF, #E1EEE6); border-radius: var(--radius); }
+  .empty-title { font-family:'IBM Plex Slab'; font-size:17px; margin:0 0 8px; }
+  .empty-sub { color: var(--ink-soft); font-size:13.5px; max-width:320px; margin: 0 auto 20px; }
+
+  .btn-primary { background: var(--sage-deep); color: var(--paper); border:none; border-radius:10px; padding:12px 20px; font-weight:600; font-size:14px; }
+  .btn-ghost { background:none; border:1px solid var(--line); border-radius:10px; padding:12px 20px; font-size:14px; color: var(--ink); }
+
+  .checkup-header h2 { font-size:18px; }
+  .checkup-sub, .checkup-hint { display:block; font-size:13px; color: var(--ink-soft); margin:6px 0 0; line-height:1.5; }
+  .checkup-hint { color: var(--gold); font-weight:500; }
+  .checkup-list { margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+  .checkup-item { display:flex; align-items:center; gap:12px; background: var(--paper-raised); border-radius:12px; padding:12px 14px; box-shadow: var(--shadow); border-left:4px solid var(--line); }
+  .checkup-item.overdue { border-left-color: var(--stamp); background: #FBEAE4; }
+  .checkup-item.done { border-left-color: var(--ok); background: #E3F1E7; }
+  .checkup-icon { width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; background: var(--line); color: var(--ink-soft); }
+  .checkup-item.overdue .checkup-icon { background: var(--stamp); color:#fff; }
+  .checkup-item.done .checkup-icon { background: var(--ok); color:#fff; }
+  .checkup-info { flex:1; min-width:0; }
+  .checkup-name { margin:0; font-size:14px; font-weight:500; }
+  .checkup-meta { margin:2px 0 0; font-size:11.5px; color: var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+  .mark-done { background:none; border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:11.5px; color: var(--ink-soft); flex-shrink:0; }
+
+  .card-form { background: var(--paper-raised); border-radius: var(--radius); padding:18px; box-shadow: var(--shadow); display:flex; flex-direction:column; gap:14px; margin-bottom:16px; }
+  .field { display:flex; flex-direction:column; gap:6px; font-size:13.5px; font-weight:500; color: var(--ink-soft); }
+  .field input, .field select, .field textarea { border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:#fff; color: var(--ink); font-size:14.5px; }
+  .date-select-row { display:flex; gap:8px; }
+  .date-select-row select { flex:1; min-width:0; border:1px solid var(--line); border-radius:9px; padding:10px 6px; background:#fff; color: var(--ink); font-size:14px; }
+  .date-select-row select:nth-child(1) { flex:0.7; }
+  .date-select-row select:nth-child(2) { flex:1.5; }
+  .date-select-row select:nth-child(3) { flex:1; }
+  .number-field-row { display:flex; gap:8px; }
+  .number-field-row input { flex:1; min-width:0; border:1px solid var(--line); border-radius:9px; padding:10px 12px; background:#fff; color: var(--ink); font-size:14.5px; }
+  .bmi-reference { font-size:11.5px; color: var(--ink-soft); margin-top:8px; line-height:1.45; }
+  .bmi-preview { font-size:13px; color: var(--ink); font-weight:500; margin-top:6px; line-height:1.45; min-height:1.3em; }
+  .field textarea { resize:vertical; font-family:inherit; }
+  .data-actions { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .data-actions button { border:1px solid transparent; background: #F7E7C7; color:#7A5217; border-radius:10px; padding:12px; text-align:center; font-size:14px; font-weight:600; }
+  .file-btn { border:1px solid transparent; background: #DCEEE3; color:#1F4D36; border-radius:10px; padding:12px; text-align:center; font-size:14px; font-weight:600; display:block; cursor:pointer; }
+  .privacy-note { font-size:12.5px; color: var(--ink-soft); line-height:1.55; }
+
+  .modal-backdrop { position:fixed; inset:0; background:rgba(31,46,40,0.45); display:flex; align-items:flex-end; justify-content:center; z-index:1000; }
+  .modal { background: var(--paper); width:100%; max-width:640px; max-height:92vh; overflow-y:auto; border-radius: 20px 20px 0 0; padding:22px 20px 26px; border-top: 5px solid var(--modal-accent, var(--sage-deep)); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap: 10px; }
+  .modal-header h2 { font-size:17px; }
+  .modal-close { background:none; border:none; font-size:26px; line-height:1; color: var(--ink-soft); padding:0 4px; flex-shrink:0; }
+
+  .type-picker { display:grid; grid-template-columns: repeat(auto-fill, minmax(96px,1fr)); gap:8px; margin-bottom:16px; }
+  .type-btn { display:flex; flex-direction:column; align-items:center; gap:4px; border:1.5px solid transparent; border-radius:12px; padding:10px 4px; background: var(--tint, #fff); font-size:11px; color: var(--ink-soft); text-align:center; }
+  .type-btn .type-icon { font-size:19px; }
+  .type-btn.active { border-color: var(--stamp-color, var(--sage-deep)); color: var(--ink); font-weight:600; }
+
+  #entryForm { display:flex; flex-direction:column; gap:14px; }
+  #entryForm .field span { font-size:13px; }
+  #entryForm input, #entryForm textarea { border:1px solid var(--line); border-radius:9px; padding:11px 12px; background:#fff; }
+
+  .attachment-preview { display:flex; gap:8px; flex-wrap:wrap; }
+  .preview-item { position:relative; width:64px; height:64px; }
+  .preview-item img { width:100%; height:100%; object-fit:cover; border-radius:8px; border:1px solid var(--line); }
+  .file-chip { width:100%; height:100%; border:1px solid var(--line); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:9px; text-align:center; padding:4px; background:#fff; overflow:hidden; }
+  .remove-att { position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; background: var(--stamp); color:#fff; border:2px solid var(--paper); font-size:13px; line-height:1; padding:0; }
+
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background: var(--sage-deep); color: var(--paper); padding:11px 16px; border-radius:10px; font-size:13.5px; z-index:1200; box-shadow: var(--shadow); max-width:90vw; display:flex; align-items:center; gap:12px; }
+  .toast-action { background:none; border:none; color: var(--gold); font-weight:700; font-size:13px; padding:0; text-decoration:underline; text-underline-offset:2px; }
+
+  @media (min-width: 560px) {
+    .topbar { padding-top:28px; }
+    .modal-backdrop { align-items:center; }
+    .modal { border-radius:20px; }
+  }
+
+  .home-profile { background: linear-gradient(135deg, var(--sage-deep), #223228); border-radius: var(--radius); padding: 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .home-profile-title { font-family:'IBM Plex Slab'; font-size:17px; color: var(--paper); margin:0 0 4px; }
+  .home-profile-sub { font-size:12.5px; color: rgba(239,242,237,0.75); line-height:1.4; }
+  .home-profile-btn { background: var(--gold); color: var(--sage-deep); border:none; border-radius:9px; padding:10px 16px; font-weight:600; font-size:13px; white-space:nowrap; flex-shrink:0; }
+
+  .home-section-title { font-size:13px; margin: 0 0 12px; color: var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; font-weight:600; }
+  .category-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+  .category-card { background: var(--cat-tint); border: none; border-radius: 14px; padding: 16px 14px; display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left; box-shadow: var(--shadow); }
+  .category-icon { font-size: 22px; }
+  .category-label { font-weight:600; font-size:13.5px; color: var(--ink); }
+  .category-count { font-size:11px; color: var(--cat-color); font-family:'IBM Plex Mono', monospace; font-weight:500; }
+
+  .profile-switcher { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; }
+  .profile-chip { flex-shrink:0; border:1.5px solid var(--line); background: var(--paper-raised); border-radius:999px; padding:9px 16px; font-size:13.5px; font-weight:500; color: var(--ink-soft); white-space:nowrap; }
+  .profile-chip.active { background: var(--sage-deep); border-color: var(--sage-deep); color: var(--paper); }
+  .profile-chip.add-profile { border-style:dashed; color: var(--sage-deep); background:none; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div id="bannerSlot"></div>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div style="min-width:0;">
+          <h1>Личная медкарта</h1>
+          <p class="brand-sub" id="profileSummary">—</p>
+        </div>
+      </div>
+      <button class="btn-add" id="openAddBtn" aria-label="Добавить запись">+</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="home" type="button">Главная</button>
+      <button class="tab" data-tab="diary" type="button">Дневник</button>
+      <button class="tab" data-tab="checkup" type="button">Чек-ап</button>
+      <button class="tab" data-tab="profile" type="button">Профиль</button>
+    </nav>
+
+    <main>
+      <section id="view-home" class="view active">
+        <div id="profileSwitcherHome" class="profile-switcher"></div>
+        <div id="homeProfileCard" class="home-profile-card"></div>
+        <h2 class="home-section-title">Категории</h2>
+        <div id="homeCategoryGrid" class="category-grid"></div>
+      </section>
+
+      <section id="view-diary" class="view">
+        <div class="filters" id="filterChips"></div>
+        <div id="timeline" class="timeline"></div>
+      </section>
+
+      <section id="view-checkup" class="view">
+        <div id="checkupHeader" class="checkup-header"></div>
+        <div id="checkupList" class="checkup-list"></div>
+      </section>
+
+      <section id="view-profile" class="view">
+        <div id="profileSwitcherTab" class="profile-switcher"></div>
+        <form id="profileForm" class="card-form">
+          <label class="field"><span>Имя (необязательно)</span><input type="text" id="profileName" placeholder="Как вас называть"></label>
+          <div class="field"><span>Дата рождения</span>
+            <div class="date-select-row">
+              <select id="profileDay" aria-label="День рождения"></select>
+              <select id="profileMonth" aria-label="Месяц рождения"></select>
+              <select id="profileYear" aria-label="Год рождения"></select>
+            </div>
+          </div>
+          <label class="field"><span>Пол</span>
+            <select id="profileGender">
+              <option value="unspecified">Не указан</option>
+              <option value="female">Женский</option>
+              <option value="male">Мужской</option>
+            </select>
+          </label>
+          <button type="button" id="saveProfileBtn" class="btn-primary">Сохранить профиль</button>
+        </form>
+        <div class="data-actions">
+          <button type="button" id="exportBtn">⭳ Скачать резервную копию (JSON)</button>
+          <label class="file-btn">⭱ Загрузить резервную копию<input type="file" id="importInput" accept="application/json" hidden></label>
+        </div>
+        <p class="privacy-note">Все записи и фотографии хранятся только в этом браузере, на вашем устройстве — они никуда не отправляются и никому не видны. Именно поэтому важно иногда скачивать резервную копию: если очистить историю браузера или открыть медкарту с другого телефона, старые записи не появятся сами — их нужно будет загрузить из этого файла.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="entryModal" class="modal-backdrop" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Новая запись</h2>
+        <button type="button" class="modal-close" id="closeEntryModal" aria-label="Закрыть">×</button>
+      </div>
+      <form id="entryForm" novalidate>
+        <div class="type-picker" id="typePicker"></div>
+        <div class="field"><span>Дата</span>
+          <div class="date-select-row">
+            <select id="fieldDay" aria-label="День"></select>
+            <select id="fieldMonth" aria-label="Месяц"></select>
+            <select id="fieldYear" aria-label="Год"></select>
+          </div>
+        </div>
+        <label class="field" id="titleFieldWrapper"><span id="titleLabel">Пользователь</span>
+          <input type="text" id="fieldTitle" list="titleSuggestions">
+          <datalist id="titleSuggestions"></datalist>
+        </label>
+        <div class="field" id="measurementFields" hidden>
+          <span>Показатели</span>
+          <div class="number-field-row">
+            <input type="number" id="fieldWeight" step="0.1" min="0" max="500" placeholder="Вес, кг" aria-label="Вес в килограммах">
+            <input type="number" id="fieldHeight" step="0.5" min="0" max="300" placeholder="Рост, см" aria-label="Рост в сантиметрах">
+          </div>
+          <p id="bmiReference" class="bmi-reference"></p>
+          <p id="bmiPreview" class="bmi-preview"></p>
+        </div>
+        <label class="field"><span>Место (необязательно)</span><input type="text" id="fieldPlace" placeholder="Клиника, город"></label>
+        <label class="field"><span>Заметки, результаты (необязательно)</span><textarea id="fieldDetails" rows="3"></textarea></label>
+        <label class="field"><span>Фото или документ (необязательно)</span><input type="file" id="fieldFiles" accept="image/*,.pdf" multiple></label>
+        <div id="attachmentPreview" class="attachment-preview"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="cancelEntryBtn">Отмена</button>
+          <button type="button" id="saveEntryBtn" class="btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden>
+    <span id="toastMessage"></span>
+    <button type="button" id="toastAction" class="toast-action" hidden></button>
+  </div>
+
+<script>
+  const TYPE_META = {
+    doctor: { label: 'Приём врача', icon: '🩺', color: '#2F6B4F', tint: '#DCEEE3' },
+    vaccine: { label: 'Прививка', icon: '💉', color: '#B8791E', tint: '#F7E7C7' },
+    lab: { label: 'Анализ', icon: '🧪', color: '#1F6E85', tint: '#D3EAF0' },
+    uzi: { label: 'УЗИ', icon: '🔬', color: '#7C4A93', tint: '#ECDEF3' },
+    xray: { label: 'Флюорография / рентген', icon: '📷', color: '#C1503A', tint: '#F9DDD4' },
+    vitamin: { label: 'Витамины / добавки', icon: '💊', color: '#74883A', tint: '#E7ECD6' },
+    measurement: { label: 'Вес и рост', icon: '⚖️', color: '#A15C6E', tint: '#F0DCE1' },
+    other: { label: 'Другое обследование', icon: '📋', color: '#4F5D75', tint: '#DEE2E9' }
+  };
+
+  const TITLE_SUGGESTIONS = {
+    doctor: ['Терапевт','Гинеколог','Уролог','Офтальмолог','Стоматолог','Дерматолог','Эндокринолог','Невролог','Кардиолог','Хирург'],
+    vaccine: ['Грипп','COVID-19','Клещевой энцефалит','Столбняк/АДС-М','Гепатит В','Пневмококк'],
+    lab: ['Общий анализ крови','Биохимический анализ крови','Общий анализ мочи','Глюкоза / HbA1c','Липидограмма (холестерин)','Гормоны щитовидной железы','ПСА','ПАП-тест','ВПЧ-тест','Кал на скрытую кровь','Витамин D','Ферритин'],
+    uzi: ['УЗИ брюшной полости','УЗИ малого таза','УЗИ молочных желёз','УЗИ щитовидной железы','УЗИ сосудов','УЗИ предстательной железы'],
+    xray: ['Флюорография','Рентген','Маммография','Денситометрия'],
+    vitamin: ['Витамин D','Витамин C','Витамин B12','Магний','Омега-3','Железо','Кальций','Цинк','Мультивитамины','Пробиотики','Фолиевая кислота'],
+    other: ['ЭКГ','Гастроскопия (ЭГДС)','Колоноскопия','Осмотр кожи / родинок']
+  };
+
+  // Общие ориентиры для профилактики — универсальные международные рекомендации, не привязанные к стране.
+  // При желании эти правила легко подправить: возраст, периодичность (freq — раз в сколько лет), пол.
+  const CHECKUP_RULES = [
+    { id:'therapist', name:'Приём терапевта', minAge:18, freq:1, gender:'any', entryType:'doctor', keywords:['терапевт'] },
+    { id:'cbc', name:'Общий анализ крови', minAge:18, freq:1, gender:'any', entryType:'lab', keywords:['общий анализ крови'] },
+    { id:'urine', name:'Общий анализ мочи', minAge:18, freq:1, gender:'any', entryType:'lab', keywords:['анализ мочи'] },
+    { id:'biochem', name:'Биохимия крови (глюкоза, холестерин)', minAge:18, freq:1, gender:'any', entryType:'lab', keywords:['биохими','глюкоз','холестерин','липидограмм'] },
+    { id:'fluoro', name:'Флюорография / рентген лёгких', minAge:18, freq:2, gender:'any', entryType:'xray', keywords:['флюорограф','рентген'] },
+    { id:'dentist', name:'Стоматолог', minAge:18, freq:1, gender:'any', entryType:'doctor', keywords:['стоматолог'] },
+    { id:'ecg', name:'ЭКГ', minAge:35, freq:1, gender:'any', entryType:'other', keywords:['экг','кардиограмм'] },
+    { id:'eye_young', name:'Осмотр офтальмолога', minAge:18, maxAge:40, freq:2, gender:'any', entryType:'doctor', keywords:['офтальмолог'] },
+    { id:'eye_senior', name:'Осмотр офтальмолога', minAge:40, freq:1, gender:'any', entryType:'doctor', keywords:['офтальмолог'] },
+    { id:'skin', name:'Осмотр кожи / родинок', minAge:18, freq:1, gender:'any', entryType:'other', keywords:['родинок','дерматоскоп'] },
+    { id:'occultblood', name:'Кал на скрытую кровь', minAge:40, freq:2, gender:'any', entryType:'lab', keywords:['скрытую кровь'] },
+    { id:'abdomenuzi', name:'УЗИ брюшной полости', minAge:40, freq:2, gender:'any', entryType:'uzi', keywords:['брюшной полост'] },
+    { id:'colonoscopy', name:'Колоноскопия', minAge:45, freq:10, gender:'any', entryType:'other', keywords:['колоноскоп'] },
+    { id:'gastroscopy', name:'Гастроскопия (ЭГДС)', minAge:45, freq:10, gender:'any', entryType:'other', keywords:['гастроскоп','эгдс'] },
+    { id:'gyno', name:'Осмотр гинеколога', minAge:18, freq:1, gender:'female', entryType:'doctor', keywords:['гинеколог'] },
+    { id:'pap', name:'ПАП-тест (цитология шейки матки)', minAge:21, freq:3, gender:'female', entryType:'lab', keywords:['пап-тест','цитологи'] },
+    { id:'hpv', name:'ВПЧ-тест', minAge:30, freq:5, gender:'female', entryType:'lab', keywords:['впч'] },
+    { id:'breastuzi', name:'УЗИ молочных желёз', minAge:18, maxAge:40, freq:1, gender:'female', entryType:'uzi', keywords:['молочных желез','молочной железы','молочных желёз'] },
+    { id:'mammo', name:'Маммография', minAge:40, freq:2, gender:'female', entryType:'xray', keywords:['маммограф'] },
+    { id:'densito', name:'Денситометрия', minAge:65, freq:2, gender:'female', entryType:'xray', keywords:['денситометри'] },
+    { id:'urologist', name:'Осмотр уролога', minAge:40, freq:1, gender:'male', entryType:'doctor', keywords:['уролог'] },
+    { id:'psa', name:'ПСА (простат-специфический антиген)', minAge:45, freq:5, gender:'male', entryType:'lab', keywords:['пса','простат'] }
+  ];
+
+  const DB_NAME = 'HealthLedgerDB';
+  const DB_VERSION = 1;
+
+  const Store = {
+    db: null,
+    useMemory: false,
+    mem: { entries: [], meta: {} },
+
+    async init() {
+      try {
+        this.db = await this._openDB();
+      } catch (err) {
+        console.warn('IndexedDB недоступен, используется временное хранилище сессии:', err);
+        this.useMemory = true;
+        showPreviewBanner();
+      }
+    },
+
+    _openDB() {
+      return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) { reject(new Error('indexedDB missing')); return; }
+        let settled = false;
+        const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('indexedDB timeout')); } }, 1500);
+        let req;
+        try {
+          req = window.indexedDB.open(DB_NAME, DB_VERSION);
+        } catch (e) { clearTimeout(timer); reject(e); return; }
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('entries')) db.createObjectStore('entries', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
+        };
+        req.onsuccess = (e) => { if (!settled) { settled = true; clearTimeout(timer); resolve(e.target.result); } };
+        req.onerror = (e) => { if (!settled) { settled = true; clearTimeout(timer); reject((e.target && e.target.error) || new Error('indexedDB error')); } };
+        req.onblocked = () => { if (!settled) { settled = true; clearTimeout(timer); reject(new Error('indexedDB blocked')); } };
+      });
+    },
+
+    async getAllEntries() {
+      if (this.useMemory) return [...this.mem.entries];
+      return new Promise((resolve, reject) => {
+        try {
+          const tx = this.db.transaction('entries', 'readonly');
+          const req = tx.objectStore('entries').getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        } catch (e) { reject(e); }
+      });
+    },
+
+    async saveEntry(entry) {
+      if (this.useMemory) {
+        const i = this.mem.entries.findIndex(e => e.id === entry.id);
+        if (i >= 0) this.mem.entries[i] = entry; else this.mem.entries.push(entry);
+        return;
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const tx = this.db.transaction('entries', 'readwrite');
+          tx.objectStore('entries').put(entry);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        } catch (e) { reject(e); }
+      });
+    },
+
+    async deleteEntry(id) {
+      if (this.useMemory) {
+        this.mem.entries = this.mem.entries.filter(e => e.id !== id);
+        return;
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const tx = this.db.transaction('entries', 'readwrite');
+          tx.objectStore('entries').delete(id);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        } catch (e) { reject(e); }
+      });
+    },
+
+    async getMeta(key, fallback) {
+      if (this.useMemory) return (key in this.mem.meta) ? this.mem.meta[key] : fallback;
+      return new Promise((resolve) => {
+        try {
+          const tx = this.db.transaction('meta', 'readonly');
+          const req = tx.objectStore('meta').get(key);
+          req.onsuccess = () => resolve(req.result ? req.result.value : fallback);
+          req.onerror = () => resolve(fallback);
+        } catch (e) { resolve(fallback); }
+      });
+    },
+
+    async setMeta(key, value) {
+      if (this.useMemory) { this.mem.meta[key] = value; return; }
+      return new Promise((resolve, reject) => {
+        try {
+          const tx = this.db.transaction('meta', 'readwrite');
+          tx.objectStore('meta').put({ key, value });
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        } catch (e) { reject(e); }
+      });
+    }
+  };
+
+  const MAX_PROFILES = 5;
+
+  const state = {
+    entries: [],
+    profiles: [],
+    activeProfileId: null,
+    completions: {},
+    filterType: 'all',
+    editingId: null
+  };
+  let modalType = 'doctor';
+  let pendingAttachments = [];
+
+  function getActiveProfile() {
+    return state.profiles.find(p => p.id === state.activeProfileId) || state.profiles[0] || { id: null, name: '', birthDate: '', gender: 'unspecified' };
+  }
+
+  function getActiveEntries() {
+    return state.entries.filter(e => e.profileId === state.activeProfileId);
+  }
+
+  function calcAge(birthDateStr) {
+    if (!birthDateStr) return null;
+    const b = new Date(birthDateStr);
+    if (isNaN(b.getTime())) return null;
+    const t = new Date();
+    let age = t.getFullYear() - b.getFullYear();
+    const m = t.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && t.getDate() < b.getDate())) age--;
+    return age;
+  }
+
+  function pluralYears(n) {
+    const abs = Math.abs(n) % 100;
+    const n1 = abs % 10;
+    if (abs > 10 && abs < 20) return 'лет';
+    if (n1 > 1 && n1 < 5) return 'года';
+    if (n1 === 1) return 'год';
+    return 'лет';
+  }
+
+  function pluralRecords(n) {
+    const abs = Math.abs(n) % 100;
+    const n1 = abs % 10;
+    if (abs > 10 && abs < 20) return 'записей';
+    if (n1 === 1) return 'запись';
+    if (n1 > 1 && n1 < 5) return 'записи';
+    return 'записей';
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    const [y, m, d] = parts;
+    return `${d}.${m}.${y}`;
+  }
+
+  const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+  function populateDateSelect(daySel, monthSel, yearSel, includeBlank) {
+    daySel.innerHTML = (includeBlank ? '<option value="">День</option>' : '') +
+      Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+    monthSel.innerHTML = (includeBlank ? '<option value="">Месяц</option>' : '') +
+      MONTH_NAMES.map((m, i) => `<option value="${i + 1}">${m}</option>`).join('');
+    const currentYear = new Date().getFullYear();
+    let yearOpts = includeBlank ? '<option value="">Год</option>' : '';
+    for (let y = currentYear; y >= currentYear - 110; y--) yearOpts += `<option value="${y}">${y}</option>`;
+    yearSel.innerHTML = yearOpts;
+  }
+
+  function setDateSelectValue(daySel, monthSel, yearSel, isoDate) {
+    if (!isoDate) { daySel.value = ''; monthSel.value = ''; yearSel.value = ''; return; }
+    const [y, m, d] = isoDate.split('-');
+    yearSel.value = String(parseInt(y, 10));
+    monthSel.value = String(parseInt(m, 10));
+    daySel.value = String(parseInt(d, 10));
+  }
+
+  function getDateSelectValue(daySel, monthSel, yearSel) {
+    const d = daySel.value, m = monthSel.value, y = yearSel.value;
+    if (!d || !m || !y) return '';
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function getApplicableRules(age, gender) {
+    return CHECKUP_RULES.filter(r => {
+      if (age < r.minAge) return false;
+      if (r.maxAge != null && age >= r.maxAge) return false;
+      if (r.gender !== 'any' && r.gender !== gender) return false;
+      return true;
+    });
+  }
+
+  function findLastMatch(rule, entries) {
+    const matches = entries.filter(e => {
+      if (e.type !== rule.entryType) return false;
+      const hay = ((e.title || '') + ' ' + (e.details || '')).toLowerCase();
+      return rule.keywords.some(k => hay.includes(k));
+    });
+    if (!matches.length) return null;
+    matches.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return matches[0];
+  }
+
+  function ruleStatus(rule, entries, completions) {
+    const lastEntry = findLastMatch(rule, entries);
+    const manualDate = completions[rule.id];
+    let lastDateStr = lastEntry ? lastEntry.date : null;
+    if (manualDate && (!lastDateStr || manualDate > lastDateStr)) lastDateStr = manualDate;
+    if (!lastDateStr) return { status: 'never', lastDate: null };
+    const last = new Date(lastDateStr);
+    const now = new Date();
+    const yearsSince = (now - last) / (1000 * 60 * 60 * 24 * 365.25);
+    return yearsSince <= rule.freq ? { status: 'done', lastDate: lastDateStr } : { status: 'overdue', lastDate: lastDateStr };
+  }
+
+  function fileToOptimizedDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      if (!file.type || !file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, mime: file.type || 'application/octet-stream', dataUrl: reader.result });
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1400;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) { height = Math.round(height * maxDim / width); width = maxDim; }
+            else { width = Math.round(width * maxDim / height); height = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          let dataUrl;
+          try { dataUrl = canvas.toDataURL('image/jpeg', 0.82); }
+          catch (e) { dataUrl = reader.result; }
+          resolve({ name: file.name, mime: 'image/jpeg', dataUrl });
+        };
+        img.onerror = () => reject(new Error('image load failed'));
+        img.src = reader.result;
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function lockScroll(lock) { document.body.style.overflow = lock ? 'hidden' : ''; }
+
+  function setOverlayVisible(el, visible, shownDisplay) {
+    el.hidden = !visible;
+    el.style.display = visible ? (shownDisplay || 'flex') : 'none';
+  }
+
+  function closeAllModals() {
+    setOverlayVisible(document.getElementById('entryModal'), false);
+    lockScroll(false);
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + tabName));
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMessage').textContent = msg;
+    document.getElementById('toastAction').hidden = true;
+    setOverlayVisible(t, true);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { setOverlayVisible(t, false); }, 2200);
+  }
+
+  function showUndoToast(msg, undoFn) {
+    const t = document.getElementById('toast');
+    const actionBtn = document.getElementById('toastAction');
+    document.getElementById('toastMessage').textContent = msg;
+    actionBtn.textContent = 'Отменить';
+    actionBtn.hidden = false;
+    setOverlayVisible(t, true);
+    clearTimeout(toastTimer);
+    const onUndo = async () => {
+      clearTimeout(toastTimer);
+      setOverlayVisible(t, false);
+      actionBtn.removeEventListener('click', onUndo);
+      await undoFn();
+    };
+    actionBtn.addEventListener('click', onUndo);
+    toastTimer = setTimeout(() => { setOverlayVisible(t, false); actionBtn.removeEventListener('click', onUndo); }, 5000);
+  }
+
+  function showPreviewBanner() {
+    const slot = document.getElementById('bannerSlot');
+    if (!slot) return;
+    slot.innerHTML = '<div class="preview-banner">Хранилище браузера сейчас недоступно — изменения сохранятся только до перезакрытия вкладки. Обычно это временно; если повторяется — попробуйте другой браузер или выключите приватный режим.</div>';
+  }
+
+  async function loadProfilesAndMigrate() {
+    let profiles = await Store.getMeta('profiles', null);
+    let activeProfileId = await Store.getMeta('activeProfileId', null);
+
+    if (!profiles || !profiles.length) {
+      const oldProfile = await Store.getMeta('profile', null);
+      const oldCompletions = await Store.getMeta('completions', {});
+      const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      profiles = [{
+        id: newId,
+        name: (oldProfile && oldProfile.name) || '',
+        birthDate: (oldProfile && oldProfile.birthDate) || '',
+        gender: (oldProfile && oldProfile.gender) || 'unspecified'
+      }];
+      activeProfileId = newId;
+      await Store.setMeta('profiles', profiles);
+      await Store.setMeta('activeProfileId', activeProfileId);
+      await Store.setMeta('completions_' + newId, oldCompletions);
+
+      for (const e of state.entries) {
+        if (!e.profileId) {
+          e.profileId = newId;
+          await Store.saveEntry(e);
+        }
+      }
+    }
+
+    state.profiles = profiles;
+    state.activeProfileId = (activeProfileId && profiles.some(p => p.id === activeProfileId)) ? activeProfileId : profiles[0].id;
+  }
+
+  function renderAll() {
+    renderProfileSwitcher();
+    renderProfileSummary();
+    renderHomeProfile();
+    renderHomeCategories();
+    renderFilterChips();
+    renderTimeline();
+    renderCheckup();
+    renderProfileForm();
+  }
+
+  function renderProfileSwitcher() {
+    const html = state.profiles.map(p => {
+      const age = calcAge(p.birthDate);
+      const label = p.name ? p.name : (age != null ? `${age} ${pluralYears(age)}` : 'Профиль');
+      const active = p.id === state.activeProfileId ? 'active' : '';
+      return `<button type="button" class="profile-chip ${active}" data-profile-id="${p.id}">${escapeHtml(label)}</button>`;
+    }).join('') + (state.profiles.length < MAX_PROFILES
+      ? `<button type="button" class="profile-chip add-profile" data-action="add-profile">+ Добавить</button>`
+      : '');
+    const homeEl = document.getElementById('profileSwitcherHome');
+    const tabEl = document.getElementById('profileSwitcherTab');
+    if (homeEl) homeEl.innerHTML = html;
+    if (tabEl) tabEl.innerHTML = html;
+  }
+
+  async function switchActiveProfile(profileId) {
+    if (profileId === state.activeProfileId) return;
+    state.activeProfileId = profileId;
+    await Store.setMeta('activeProfileId', profileId);
+    state.completions = await Store.getMeta('completions_' + profileId, {});
+    renderAll();
+  }
+
+  async function addNewProfile() {
+    if (state.profiles.length >= MAX_PROFILES) { showToast(`Максимум ${MAX_PROFILES} профилей`); return; }
+    const newProfile = { id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name: '', birthDate: '', gender: 'unspecified' };
+    state.profiles.push(newProfile);
+    await Store.setMeta('profiles', state.profiles);
+    await switchActiveProfile(newProfile.id);
+    switchTab('profile');
+    showToast('Профиль добавлен — заполните данные');
+  }
+
+  function renderHomeProfile() {
+    const root = document.getElementById('homeProfileCard');
+    const profile = getActiveProfile();
+    const age = calcAge(profile.birthDate);
+    if (age == null) {
+      root.innerHTML = `<div class="home-profile">
+        <div>
+          <p class="home-profile-title">Заполните профиль</p>
+          <p class="home-profile-sub">Укажите дату рождения и пол — тогда чек-ап подскажет, что стоит пройти в вашем возрасте.</p>
+        </div>
+        <button type="button" class="home-profile-btn" data-action="go-profile">Заполнить</button>
+      </div>`;
+      return;
+    }
+    const genderLabel = profile.gender === 'female' ? 'Женский' : profile.gender === 'male' ? 'Мужской' : 'пол не указан';
+    root.innerHTML = `<div class="home-profile">
+      <div>
+        <p class="home-profile-title">${escapeHtml(profile.name || 'Ваш профиль')}</p>
+        <p class="home-profile-sub">${age} ${pluralYears(age)} · ${genderLabel}</p>
+      </div>
+      <button type="button" class="home-profile-btn" data-action="go-profile">Изменить</button>
+    </div>`;
+  }
+
+  function renderHomeCategories() {
+    const root = document.getElementById('homeCategoryGrid');
+    const activeEntries = getActiveEntries();
+    root.innerHTML = Object.entries(TYPE_META).map(([key, meta]) => {
+      const entriesOfType = activeEntries.filter(e => e.type === key);
+      let statLine;
+      if (key === 'measurement') {
+        const latest = [...entriesOfType].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+        statLine = latest ? renderMeasurementSummary(latest, calcAge(getActiveProfile().birthDate)).line : 'нет данных';
+      } else {
+        statLine = `${entriesOfType.length} ${pluralRecords(entriesOfType.length)}`;
+      }
+      return `<button type="button" class="category-card" data-preset-type="${key}" style="--cat-color:${meta.color}; --cat-tint:${meta.tint}">
+        <span class="category-icon">${meta.icon}</span>
+        <span class="category-label">${escapeHtml(meta.label)}</span>
+        <span class="category-count">${escapeHtml(statLine)}</span>
+      </button>`;
+    }).join('');
+  }
+
+  function renderProfileSummary() {
+    const el = document.getElementById('profileSummary');
+    const profile = getActiveProfile();
+    const age = calcAge(profile.birthDate);
+    if (profile.name && age != null) el.textContent = `${profile.name} · ${age} ${pluralYears(age)}`;
+    else if (age != null) el.textContent = `${age} ${pluralYears(age)}`;
+    else el.textContent = 'Заполните профиль для рекомендаций';
+  }
+
+  function renderFilterChips() {
+    const root = document.getElementById('filterChips');
+    const types = ['all', ...Object.keys(TYPE_META)];
+    root.innerHTML = types.map(t => {
+      const label = t === 'all' ? 'Все' : TYPE_META[t].label;
+      const active = (state.filterType || 'all') === t ? 'active' : '';
+      const style = t === 'all' ? '' : ` style="--chip-tint:${TYPE_META[t].tint}; --chip-color:${TYPE_META[t].color}"`;
+      return `<button type="button" class="chip ${active}" data-filter="${t}"${style}>${escapeHtml(label)}</button>`;
+    }).join('');
+  }
+
+  function renderAttachmentThumbs(atts, entryId) {
+    return `<div class="attachments">${atts.map((a, i) => {
+      if (a.mime && a.mime.startsWith('image/')) {
+        return `<a class="thumb" href="${a.dataUrl}" target="_blank" rel="noopener" title="Открыть в новой вкладке"><img src="${a.dataUrl}" alt="Вложение"></a>`;
+      }
+      return `<a class="thumb file-thumb" href="${a.dataUrl}" download="${escapeHtml(a.name || 'file')}" title="Скачать файл">📄<span>${escapeHtml(a.name || 'файл')}</span></a>`;
+    }).join('')}</div>`;
+  }
+
+  function renderTimeline() {
+    const root = document.getElementById('timeline');
+    let list = getActiveEntries();
+    if (state.filterType && state.filterType !== 'all') list = list.filter(e => e.type === state.filterType);
+    list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    if (!list.length) {
+      root.innerHTML = `<div class="empty">
+        <p class="empty-title">Записей пока нет</p>
+        <p class="empty-sub">Добавьте первый визит к врачу, анализ или прививку — так начнётся история вашего здоровья.</p>
+        <button type="button" class="btn-primary" data-action="add-first">Добавить запись</button>
+      </div>`;
+      return;
+    }
+
+    let html = '';
+    let currentYear = null;
+    const profileAge = calcAge(getActiveProfile().birthDate);
+    for (const e of list) {
+      const year = (e.date || '').slice(0, 4) || '—';
+      if (year !== currentYear) { html += `<div class="year-divider">${year}</div>`; currentYear = year; }
+      const meta = TYPE_META[e.type] || TYPE_META.other;
+      const isMeasurement = e.type === 'measurement';
+      const measurement = isMeasurement ? renderMeasurementSummary(e, profileAge) : null;
+      const titleLine = isMeasurement ? measurement.line : (e.title || meta.label);
+      html += `<article class="entry-card" style="--card-tint:${meta.tint}">
+        <div class="stamp" style="--stamp-color:${meta.color}">${meta.icon}</div>
+        <div class="entry-body">
+          <div class="entry-top">
+            <time class="entry-date">${formatDate(e.date)}</time>
+            <span class="entry-type">${escapeHtml(meta.label)}</span>
+          </div>
+          <h3 class="entry-title">${escapeHtml(titleLine)}</h3>
+          ${isMeasurement && measurement.phrase ? `<p class="entry-place">${escapeHtml(measurement.phrase)}</p>` : ''}
+          ${e.place ? `<p class="entry-place">${escapeHtml(e.place)}</p>` : ''}
+          ${e.details ? `<p class="entry-details">${escapeHtml(e.details)}</p>` : ''}
+          ${e.attachments && e.attachments.length ? renderAttachmentThumbs(e.attachments, e.id) : ''}
+          <div class="entry-actions">
+            <button type="button" data-action="edit" data-id="${e.id}">Изменить</button>
+            <button type="button" data-action="delete" data-id="${e.id}">Удалить</button>
+          </div>
+        </div>
+      </article>`;
+    }
+    root.innerHTML = html;
+  }
+
+  function renderCheckup() {
+    const header = document.getElementById('checkupHeader');
+    const listEl = document.getElementById('checkupList');
+    const profile = getActiveProfile();
+    const age = calcAge(profile.birthDate);
+    if (age == null) {
+      header.innerHTML = `<h2>Чек-ап</h2><p class="checkup-sub">Укажите дату рождения в разделе «Профиль» — тогда здесь появится список того, что стоит проверять в вашем возрасте.</p>`;
+      listEl.innerHTML = '';
+      return;
+    }
+    const gender = profile.gender || 'unspecified';
+    let html = `<h2>Чек-ап · ${age} ${pluralYears(age)}</h2>
+      <p class="checkup-sub">Общие ориентиры для профилактики, а не диагноз или назначение — финальный список и периодичность лучше уточнить у своего врача с учётом самочувствия и семейной истории.</p>`;
+    if (gender === 'unspecified') html += `<p class="checkup-hint">Укажите пол в профиле, чтобы добавить женские или мужские обследования.</p>`;
+    header.innerHTML = html;
+
+    const rules = getApplicableRules(age, gender);
+    const activeEntries = getActiveEntries();
+    const withStatus = rules.map(r => ({ rule: r, ...ruleStatus(r, activeEntries, state.completions) }));
+    const order = { overdue: 0, never: 0, done: 1 };
+    withStatus.sort((a, b) => order[a.status] - order[b.status]);
+
+    listEl.innerHTML = withStatus.map(item => {
+      const { rule, status, lastDate } = item;
+      const isDone = status === 'done';
+      const metaText = lastDate
+        ? `Последний раз: ${formatDate(lastDate)} · раз в ${rule.freq} ${pluralYears(rule.freq)}`
+        : `Раз в ${rule.freq} ${pluralYears(rule.freq)} · подходящих записей не найдено`;
+      return `<div class="checkup-item ${isDone ? 'done' : 'overdue'}">
+        <div class="checkup-icon">${isDone ? '✓' : '!'}</div>
+        <div class="checkup-info">
+          <p class="checkup-name">${escapeHtml(rule.name)}</p>
+          <p class="checkup-meta">${metaText}</p>
+        </div>
+        <button type="button" data-rule="${rule.id}" class="mark-done">Отметить</button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderProfileForm() {
+    const profile = getActiveProfile();
+    document.getElementById('profileName').value = profile.name || '';
+    setDateSelectValue(document.getElementById('profileDay'), document.getElementById('profileMonth'), document.getElementById('profileYear'), profile.birthDate || '');
+    document.getElementById('profileGender').value = profile.gender || 'unspecified';
+  }
+
+  function renderTypePicker(selected) {
+    const root = document.getElementById('typePicker');
+    root.innerHTML = Object.entries(TYPE_META).map(([key, meta]) => `
+      <button type="button" class="type-btn ${key === selected ? 'active' : ''}" data-type="${key}" aria-pressed="${key === selected}" style="--stamp-color:${meta.color}; --tint:${meta.tint}">
+        <span class="type-icon">${meta.icon}</span><span class="type-label">${meta.label}</span>
+      </button>`).join('');
+  }
+
+  function updateTitleSuggestions() {
+    document.getElementById('titleLabel').textContent = 'Пользователь';
+    const dl = document.getElementById('titleSuggestions');
+    dl.innerHTML = (TITLE_SUGGESTIONS[modalType] || []).map(s => `<option value="${escapeHtml(s)}">`).join('');
+  }
+
+  function updateFormFieldsForType() {
+    const isMeasurement = modalType === 'measurement';
+    document.getElementById('titleFieldWrapper').hidden = isMeasurement;
+    document.getElementById('measurementFields').hidden = !isMeasurement;
+    if (isMeasurement) {
+      updateBmiStaticReference();
+      updateBmiPreview();
+    }
+  }
+
+  function calcBmi(weightKg, heightCm) {
+    if (!weightKg || !heightCm) return null;
+    const h = heightCm / 100;
+    return weightKg / (h * h);
+  }
+
+  function bmiCategory(bmi, age) {
+    if (bmi == null) return null;
+    if (age != null && age < 18) {
+      return { label: 'см. педиатра', phrase: 'Для детей норма ИМТ определяется по возрасту — уточните у педиатра.' };
+    }
+    if (bmi < 18.5) return { label: 'Недостаточный вес', phrase: 'Вес ниже нормы — стоит обсудить с врачом причины и способы набора.' };
+    if (bmi < 25) return { label: 'Норма', phrase: 'Вес в пределах здоровой нормы — отличный результат, продолжайте в том же духе.' };
+    if (bmi < 30) return { label: 'Избыточный вес', phrase: 'Вес выше нормы — питание и активность помогут вернуться в норму.' };
+    return { label: 'Ожирение', phrase: 'Повышенный риск для здоровья — стоит обсудить с врачом снижение веса.' };
+  }
+
+  function renderMeasurementSummary(e, age) {
+    const parts = [];
+    if (e.weightKg != null) parts.push(`${e.weightKg} кг`);
+    if (e.heightCm != null) parts.push(`${e.heightCm} см`);
+    const bmi = calcBmi(e.weightKg, e.heightCm);
+    const cat = bmi != null ? bmiCategory(bmi, age) : null;
+    if (bmi != null) parts.push(`ИМТ ${bmi.toFixed(1)}`);
+    if (cat) parts.push(cat.label);
+    return { line: parts.length ? parts.join(' · ') : 'Без показателей', phrase: cat ? cat.phrase : '' };
+  }
+
+  function updateBmiStaticReference() {
+    const el = document.getElementById('bmiReference');
+    if (!el) return;
+    const age = calcAge(getActiveProfile().birthDate);
+    el.textContent = (age != null && age < 18)
+      ? 'Для детей нормы ИМТ определяются по возрасту — их лучше уточнить у педиатра.'
+      : 'Ориентиры ИМТ: до 18.5 — недостаточный вес, 18.5–24.9 — норма, 25–29.9 — избыточный вес, от 30 — ожирение.';
+  }
+
+  function updateBmiPreview() {
+    const preview = document.getElementById('bmiPreview');
+    if (!preview) return;
+    const weight = parseFloat(document.getElementById('fieldWeight').value);
+    const height = parseFloat(document.getElementById('fieldHeight').value);
+    const bmi = calcBmi(weight, height);
+    if (bmi == null) { preview.textContent = ''; return; }
+    const age = calcAge(getActiveProfile().birthDate);
+    const cat = bmiCategory(bmi, age);
+    preview.textContent = `ИМТ ${bmi.toFixed(1)} · ${cat.label}. ${cat.phrase}`;
+  }
+
+  function renderAttachmentPreview() {
+    const root = document.getElementById('attachmentPreview');
+    root.innerHTML = pendingAttachments.map((a, i) => {
+      const inner = a.mime && a.mime.startsWith('image/')
+        ? `<img src="${a.dataUrl}" alt="">`
+        : `<div class="file-chip">📄 ${escapeHtml(a.name || 'файл')}</div>`;
+      return `<div class="preview-item">${inner}<button type="button" class="remove-att" data-i="${i}" aria-label="Удалить вложение">×</button></div>`;
+    }).join('');
+  }
+
+  function openAddModal(id, presetType) {
+    closeAllModals();
+    state.editingId = id || null;
+    const entry = id ? state.entries.find(e => e.id === id) : null;
+    modalType = entry ? entry.type : (presetType || 'doctor');
+    pendingAttachments = entry ? [...(entry.attachments || [])] : [];
+    document.getElementById('modalTitle').textContent = entry ? 'Изменить запись' : 'Новая запись';
+    renderTypePicker(modalType);
+    updateTitleSuggestions();
+    updateFormFieldsForType();
+    document.querySelector('#entryModal .modal').style.setProperty('--modal-accent', TYPE_META[modalType].color);
+    setDateSelectValue(
+      document.getElementById('fieldDay'), document.getElementById('fieldMonth'), document.getElementById('fieldYear'),
+      entry ? entry.date : new Date().toISOString().slice(0, 10)
+    );
+    document.getElementById('fieldTitle').value = entry ? entry.title : '';
+    document.getElementById('fieldWeight').value = (entry && entry.weightKg != null) ? entry.weightKg : '';
+    document.getElementById('fieldHeight').value = (entry && entry.heightCm != null) ? entry.heightCm : '';
+    document.getElementById('fieldPlace').value = entry ? (entry.place || '') : '';
+    document.getElementById('fieldDetails').value = entry ? (entry.details || '') : '';
+    document.getElementById('fieldFiles').value = '';
+    renderAttachmentPreview();
+    updateBmiPreview();
+    setOverlayVisible(document.getElementById('entryModal'), true);
+    lockScroll(true);
+  }
+
+  function closeAddModal() {
+    setOverlayVisible(document.getElementById('entryModal'), false);
+    lockScroll(false);
+    state.editingId = null;
+    pendingAttachments = [];
+  }
+
+  async function markCheckupDone(ruleId) {
+    const today = new Date().toISOString().slice(0, 10);
+    state.completions[ruleId] = today;
+    await Store.setMeta('completions_' + state.activeProfileId, state.completions);
+    renderCheckup();
+    showToast('Отмечено выполненным');
+  }
+
+  async function handleDelete(id) {
+    const entry = state.entries.find(e => e.id === id);
+    if (!entry) return;
+    state.entries = state.entries.filter(e => e.id !== id);
+    await Store.deleteEntry(id);
+    renderTimeline();
+    renderCheckup();
+    renderHomeCategories();
+    showUndoToast('Запись удалена', async () => {
+      state.entries.push(entry);
+      await Store.saveEntry(entry);
+      renderTimeline();
+      renderCheckup();
+      renderHomeCategories();
+    });
+  }
+
+  async function handleSaveEntry() {
+    try {
+      const isMeasurement = modalType === 'measurement';
+      const titleVal = document.getElementById('fieldTitle').value.trim();
+      const weightRaw = document.getElementById('fieldWeight').value.trim();
+      const heightRaw = document.getElementById('fieldHeight').value.trim();
+      const dateVal = getDateSelectValue(document.getElementById('fieldDay'), document.getElementById('fieldMonth'), document.getElementById('fieldYear'))
+        || new Date().toISOString().slice(0, 10);
+
+      if (isMeasurement) {
+        if (!weightRaw && !heightRaw) { showToast('Укажите вес или рост'); return; }
+      } else if (!titleVal) {
+        showToast('Заполните поле «' + document.getElementById('titleLabel').textContent + '»');
+        return;
+      }
+
+      const entry = {
+        id: state.editingId || ('e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)),
+        profileId: state.activeProfileId,
+        type: modalType,
+        date: dateVal,
+        title: isMeasurement ? '' : titleVal,
+        weightKg: isMeasurement && weightRaw ? parseFloat(weightRaw) : undefined,
+        heightCm: isMeasurement && heightRaw ? parseFloat(heightRaw) : undefined,
+        place: document.getElementById('fieldPlace').value.trim(),
+        details: document.getElementById('fieldDetails').value.trim(),
+        attachments: pendingAttachments,
+        createdAt: Date.now()
+      };
+      await Store.saveEntry(entry);
+      const idx = state.entries.findIndex(x => x.id === entry.id);
+      if (idx >= 0) state.entries[idx] = entry; else state.entries.push(entry);
+      closeAddModal();
+      renderTimeline();
+      renderCheckup();
+      renderHomeCategories();
+      showToast('Сохранено');
+    } catch (err) {
+      console.error('Save entry failed:', err);
+      showToast('Не удалось сохранить запись. Попробуйте ещё раз.');
+    }
+  }
+
+  async function handleSaveProfile() {
+    try {
+      const idx = state.profiles.findIndex(p => p.id === state.activeProfileId);
+      if (idx < 0) return;
+      state.profiles[idx] = {
+        id: state.activeProfileId,
+        name: document.getElementById('profileName').value.trim(),
+        birthDate: getDateSelectValue(document.getElementById('profileDay'), document.getElementById('profileMonth'), document.getElementById('profileYear')),
+        gender: document.getElementById('profileGender').value
+      };
+      await Store.setMeta('profiles', state.profiles);
+      renderProfileSwitcher();
+      renderProfileSummary();
+      renderHomeProfile();
+      renderCheckup();
+      showToast('Профиль сохранён');
+    } catch (err) {
+      console.error('Save profile failed:', err);
+      showToast('Не удалось сохранить профиль. Попробуйте ещё раз.');
+    }
+  }
+
+  function bindEvents() {
+    populateDateSelect(document.getElementById('fieldDay'), document.getElementById('fieldMonth'), document.getElementById('fieldYear'), false);
+    populateDateSelect(document.getElementById('profileDay'), document.getElementById('profileMonth'), document.getElementById('profileYear'), true);
+
+    document.getElementById('openAddBtn').addEventListener('click', () => openAddModal());
+
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    document.getElementById('homeCategoryGrid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.category-card');
+      if (!btn) return;
+      openAddModal(null, btn.dataset.presetType);
+    });
+
+    document.getElementById('homeProfileCard').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action="go-profile"]');
+      if (!btn) return;
+      switchTab('profile');
+    });
+
+    ['profileSwitcherHome', 'profileSwitcherTab'].forEach(containerId => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.addEventListener('click', async (e) => {
+        const addBtn = e.target.closest('[data-action="add-profile"]');
+        if (addBtn) { await addNewProfile(); return; }
+        const chip = e.target.closest('.profile-chip[data-profile-id]');
+        if (chip) { await switchActiveProfile(chip.dataset.profileId); }
+      });
+    });
+
+    document.getElementById('filterChips').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      state.filterType = btn.dataset.filter;
+      renderFilterChips();
+      renderTimeline();
+    });
+
+    document.getElementById('timeline').addEventListener('click', (e) => {
+      const actionBtn = e.target.closest('button[data-action]');
+      if (!actionBtn) return;
+      const action = actionBtn.dataset.action;
+      if (action === 'edit') openAddModal(actionBtn.dataset.id);
+      else if (action === 'delete') handleDelete(actionBtn.dataset.id);
+      else if (action === 'add-first') openAddModal();
+    });
+
+    document.getElementById('checkupList').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-rule]');
+      if (!btn) return;
+      markCheckupDone(btn.dataset.rule);
+    });
+
+    document.getElementById('typePicker').addEventListener('click', (e) => {
+      const btn = e.target.closest('.type-btn');
+      if (!btn) return;
+      modalType = btn.dataset.type;
+      renderTypePicker(modalType);
+      updateTitleSuggestions();
+      updateFormFieldsForType();
+      document.querySelector('#entryModal .modal').style.setProperty('--modal-accent', TYPE_META[modalType].color);
+    });
+
+    document.getElementById('fieldWeight').addEventListener('input', updateBmiPreview);
+    document.getElementById('fieldHeight').addEventListener('input', updateBmiPreview);
+
+    document.getElementById('fieldFiles').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      for (const f of files) {
+        try {
+          const att = await fileToOptimizedDataUrl(f);
+          pendingAttachments.push(att);
+        } catch (err) {
+          console.error(err);
+          showToast('Не удалось прикрепить файл');
+        }
+      }
+      renderAttachmentPreview();
+      e.target.value = '';
+    });
+
+    document.getElementById('attachmentPreview').addEventListener('click', (e) => {
+      const btn = e.target.closest('.remove-att');
+      if (!btn) return;
+      pendingAttachments.splice(+btn.dataset.i, 1);
+      renderAttachmentPreview();
+    });
+
+    document.getElementById('entryForm').addEventListener('submit', (e) => { e.preventDefault(); handleSaveEntry(); });
+    document.getElementById('saveEntryBtn').addEventListener('click', () => handleSaveEntry());
+
+    document.getElementById('closeEntryModal').addEventListener('click', closeAddModal);
+    document.getElementById('cancelEntryBtn').addEventListener('click', closeAddModal);
+    document.getElementById('entryModal').addEventListener('click', (e) => { if (e.target.id === 'entryModal') closeAddModal(); });
+
+    document.getElementById('profileForm').addEventListener('submit', (e) => { e.preventDefault(); handleSaveProfile(); });
+    document.getElementById('saveProfileBtn').addEventListener('click', () => handleSaveProfile());
+
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const completions = {};
+      for (const p of state.profiles) completions[p.id] = await Store.getMeta('completions_' + p.id, {});
+      const payload = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        profiles: state.profiles,
+        activeProfileId: state.activeProfileId,
+        entries: state.entries,
+        completions
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `medcard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Резервная копия скачана');
+    });
+
+    document.getElementById('importInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!Array.isArray(data.entries)) throw new Error('bad format');
+
+          const prevEntries = [...state.entries];
+          const prevProfiles = JSON.parse(JSON.stringify(state.profiles));
+          const prevActiveProfileId = state.activeProfileId;
+          const prevCompletionsByProfile = {};
+          for (const p of prevProfiles) prevCompletionsByProfile[p.id] = await Store.getMeta('completions_' + p.id, {});
+
+          for (const ex of state.entries) await Store.deleteEntry(ex.id);
+          state.entries = [];
+
+          let newProfiles, newActiveProfileId, newCompletionsByProfile;
+          if (Array.isArray(data.profiles) && data.profiles.length) {
+            newProfiles = data.profiles;
+            newActiveProfileId = data.activeProfileId && data.profiles.some(p => p.id === data.activeProfileId) ? data.activeProfileId : data.profiles[0].id;
+            newCompletionsByProfile = data.completions || {};
+            for (const en of data.entries) { await Store.saveEntry(en); state.entries.push(en); }
+          } else {
+            const singleId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            newProfiles = [{ id: singleId, name: (data.profile && data.profile.name) || '', birthDate: (data.profile && data.profile.birthDate) || '', gender: (data.profile && data.profile.gender) || 'unspecified' }];
+            newActiveProfileId = singleId;
+            newCompletionsByProfile = { [singleId]: data.completions || {} };
+            for (const en of data.entries) { en.profileId = singleId; await Store.saveEntry(en); state.entries.push(en); }
+          }
+
+          state.profiles = newProfiles;
+          state.activeProfileId = newActiveProfileId;
+          await Store.setMeta('profiles', state.profiles);
+          await Store.setMeta('activeProfileId', state.activeProfileId);
+          for (const p of state.profiles) await Store.setMeta('completions_' + p.id, newCompletionsByProfile[p.id] || {});
+          state.completions = await Store.getMeta('completions_' + state.activeProfileId, {});
+          renderAll();
+
+          showUndoToast(`Импортировано записей: ${data.entries.length}`, async () => {
+            for (const ex of state.entries) await Store.deleteEntry(ex.id);
+            state.entries = [];
+            for (const en of prevEntries) { await Store.saveEntry(en); state.entries.push(en); }
+            state.profiles = prevProfiles;
+            state.activeProfileId = prevActiveProfileId;
+            await Store.setMeta('profiles', state.profiles);
+            await Store.setMeta('activeProfileId', state.activeProfileId);
+            for (const p of prevProfiles) await Store.setMeta('completions_' + p.id, prevCompletionsByProfile[p.id] || {});
+            state.completions = await Store.getMeta('completions_' + state.activeProfileId, {});
+            renderAll();
+          });
+        } catch (err) {
+          console.error(err);
+          showToast('Не удалось прочитать файл резервной копии');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!document.getElementById('entryModal').hidden) closeAddModal();
+    });
+  }
+
+  async function boot() {
+    bindEvents();
+    await Store.init();
+    state.entries = await Store.getAllEntries();
+    await loadProfilesAndMigrate();
+    state.completions = await Store.getMeta('completions_' + state.activeProfileId, {});
+    renderAll();
+  }
+  boot();
+</script>
+</body>
+</html>
